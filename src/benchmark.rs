@@ -24,6 +24,11 @@ pub struct TestConfig {
 struct RequestCounter(AtomicUsize);
 
 impl RequestCounter {
+    
+    fn new(count: usize) -> Self {
+        Self(AtomicUsize::new(count))
+    }
+
     fn claim(&self) -> Option<usize> {
         let claimed =
             self.0
@@ -111,7 +116,7 @@ impl Tester {
         let ctx = Arc::new(TestCtx {
             host_addr: self.config.host_addr,
             request: Request::Get(GetRequest { filename }),
-            requests_remaining: AtomicUsize::new(self.config.num_requests),
+            counter: RequestCounter::new(self.config.num_requests),
             progress: ProgressBar::new(self.config.num_requests as u64),
         });
 
