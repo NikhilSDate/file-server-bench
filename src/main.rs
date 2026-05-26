@@ -13,6 +13,7 @@ use serde::{Deserialize, Serialize};
 use tokio::{task::JoinSet, time::Instant};
 
 use crate::client::{Client, GetRequest, PutRequest, Request, RequestError};
+use indicatif::ProgressBar;
 
 mod client;
 
@@ -45,6 +46,7 @@ struct TestCtx {
     host_addr: SocketAddr,
     request: Request,
     requests_remaining: AtomicUsize,
+    progress: ProgressBar
 }
 
 struct Tester {
@@ -106,6 +108,7 @@ impl Tester {
             };
             let elapsed = before.elapsed();
             results.push(outcome.map(|_| elapsed));
+            ctx.progress.inc(1);
         }
         results
     }
@@ -117,6 +120,7 @@ impl Tester {
             host_addr: self.config.host_addr,
             request: Request::Get(GetRequest { filename }),
             requests_remaining: AtomicUsize::new(self.config.num_requests),
+            progress: ProgressBar::new(self.config.num_requests as u64)
         });
 
         let start = Instant::now();
