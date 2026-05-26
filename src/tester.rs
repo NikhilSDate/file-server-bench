@@ -28,6 +28,19 @@ struct TestCtx {
     progress: ProgressBar,
 }
 
+impl TestCtx {
+    // tries to claim a request
+    // returns remaining requests BEFORE request was claimed
+    fn claim(&self) -> Option<usize> {
+        let claimed = self.requests_remaining.fetch_update(
+            Ordering::SeqCst,
+            Ordering::SeqCst,
+            |x| if x > 0 { Some(x - 1) } else { None },
+        );
+        claimed.ok()
+    }
+}
+
 pub struct Tester {
     config: TestConfig,
 }
@@ -68,13 +81,9 @@ impl Tester {
     async fn worker(ctx: Arc<TestCtx>) -> Vec<Result<Duration, RequestError>> {
         let mut results = Vec::new();
         loop {
-            let claimed = ctx.requests_remaining.fetch_update(
-                Ordering::SeqCst,
-                Ordering::SeqCst,
-                |x| if x > 0 { Some(x - 1) } else { None },
-            );
-            if claimed.is_err() {
-                break;
+
+            if ctx.claim().is_none() {
+                break
             }
 
             let client = Client::new(ctx.host_addr);
