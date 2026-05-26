@@ -1,6 +1,6 @@
-# File Server Benchmark
+# File Server Load Tester
 
-A configurable HTTP file-server benchmark tool for the protocol implemented in UIUC CS341.
+A configurable file-server load testing/benchmark tool using the HTTP-based protocol implemented in UIUC CS341.
 
 ## Usage
 

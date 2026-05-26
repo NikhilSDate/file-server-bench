@@ -29,7 +29,7 @@ impl RequestCounter {
         Self(AtomicUsize::new(count))
     }
 
-    fn claim(&self) -> Option<usize> {
+    fn try_decrement(&self) -> Option<usize> {
         let claimed =
             self.0
                 .fetch_update(Ordering::SeqCst, Ordering::SeqCst, |x| {
@@ -91,7 +91,7 @@ impl Tester {
     async fn worker(ctx: Arc<TestCtx>) -> Vec<Result<Duration, RequestError>> {
         let mut results = Vec::new();
         loop {
-            if ctx.counter.claim().is_none() {
+            if ctx.counter.try_decrement().is_none() {
                 break;
             }
 
