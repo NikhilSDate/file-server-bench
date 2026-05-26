@@ -25,12 +25,6 @@ concurrency: 1              # number of concurrent connections
 file_size: 1024             # size of the file to upload during setup (bytes)
 ```
 
-Pre-made configs are in [configs/](configs/):
-
-| Config | Requests | Concurrency | File size |
-|--------|----------|-------------|-----------|
-| `simple.yaml` | 10 | 1 | 1 KB |
-
 ## Output
 
 Results are written as JSON:
