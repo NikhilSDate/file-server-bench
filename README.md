@@ -1,4 +1,4 @@
-# nnab — Not a Benchmark
+# File Server Benchmark
 
 A configurable HTTP file-server benchmark tool for the protocol implemented in UIUC CS341.
 
