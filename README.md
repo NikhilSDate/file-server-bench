@@ -21,7 +21,7 @@ Config files are YAML with four fields:
 ```yaml
 server: "127.0.0.1:9001"   # server IP and port
 num_requests: 10            # total number of GET requests to send
-concurrency: 1              # number of concurrent workers
+concurrency: 1              # number of concurrent connections
 file_size: 1024             # size of the file to upload during setup (bytes)
 ```
 
