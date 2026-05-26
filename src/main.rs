@@ -3,10 +3,10 @@ use std::net::SocketAddr;
 use clap::Parser;
 use serde::Deserialize;
 
-use tester::{Tester, TestConfig};
+use benchmark::{Tester, TestConfig};
 
 mod client;
-mod tester;
+mod benchmark;
 
 #[derive(Deserialize)]
 struct BenchConfig {
