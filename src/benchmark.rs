@@ -21,24 +21,30 @@ pub struct TestConfig {
     pub concurrency: usize,
 }
 
+struct RequestCounter(AtomicUsize)
+
+impl RequestCounter {
+    fn claim(&self) -> Option<usize> {
+        let claimed =
+            self.0
+                .fetch_update(Ordering::SeqCst, Ordering::SeqCst, |x| {
+                    if x > 0 { Some(x - 1) } else { None }
+                });
+        claimed.ok()
+    }
+}
+
 struct TestCtx {
     host_addr: SocketAddr,
     request: Request,
-    requests_remaining: AtomicUsize,
+    counter: RequestCounter,
     progress: ProgressBar,
 }
 
 impl TestCtx {
     // tries to claim a request
     // returns remaining requests BEFORE request was claimed
-    fn claim(&self) -> Option<usize> {
-        let claimed = self.requests_remaining.fetch_update(
-            Ordering::SeqCst,
-            Ordering::SeqCst,
-            |x| if x > 0 { Some(x - 1) } else { None },
-        );
-        claimed.ok()
-    }
+
 }
 
 pub struct Tester {
@@ -73,7 +79,12 @@ impl Tester {
         rng.fill_bytes(&mut data);
 
         let client = Client::new(self.config.host_addr);
-        client.put(&PutRequest { filename: filename.clone(), data }).await?;
+        client
+            .put(&PutRequest {
+                filename: filename.clone(),
+                data,
+            })
+            .await?;
 
         Ok(filename)
     }
@@ -81,9 +92,8 @@ impl Tester {
     async fn worker(ctx: Arc<TestCtx>) -> Vec<Result<Duration, RequestError>> {
         let mut results = Vec::new();
         loop {
-
-            if ctx.claim().is_none() {
-                break
+            if ctx.counter.claim().is_none() {
+                break;
             }
 
             let client = Client::new(ctx.host_addr);

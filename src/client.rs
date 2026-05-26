@@ -35,7 +35,7 @@ pub enum Request {
     Get(GetRequest),
     Put(PutRequest),
     Delete(DeleteRequest),
-    List
+    List,
 }
 
 #[derive(Debug)]
