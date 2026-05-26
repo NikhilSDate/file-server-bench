@@ -21,7 +21,7 @@ pub struct TestConfig {
     pub concurrency: usize,
 }
 
-struct RequestCounter(AtomicUsize)
+struct RequestCounter(AtomicUsize);
 
 impl RequestCounter {
     fn claim(&self) -> Option<usize> {
@@ -39,12 +39,6 @@ struct TestCtx {
     request: Request,
     counter: RequestCounter,
     progress: ProgressBar,
-}
-
-impl TestCtx {
-    // tries to claim a request
-    // returns remaining requests BEFORE request was claimed
-
 }
 
 pub struct Tester {
