@@ -14,7 +14,7 @@ use tokio::{task::JoinSet, time::Instant};
 
 use crate::client::{Client, GetRequest, PutRequest, Request, RequestError};
 
-pub struct TestConfig {
+pub struct LoadTestConfig {
     pub host_addr: SocketAddr,
     pub num_requests: usize,
     pub file_size: usize,
@@ -24,30 +24,29 @@ pub struct TestConfig {
 struct RequestCounter(AtomicUsize);
 
 impl RequestCounter {
-    
     fn new(count: usize) -> Self {
         Self(AtomicUsize::new(count))
     }
 
     fn try_decrement(&self) -> Option<usize> {
-        let claimed =
-            self.0
-                .fetch_update(Ordering::SeqCst, Ordering::SeqCst, |x| {
-                    if x > 0 { Some(x - 1) } else { None }
-                });
+        let claimed = self
+            .0
+            .fetch_update(Ordering::SeqCst, Ordering::SeqCst, |x| {
+                if x > 0 { Some(x - 1) } else { None }
+            });
         claimed.ok()
     }
 }
 
-struct TestCtx {
+struct LoadTestCtx {
     host_addr: SocketAddr,
     request: Request,
     counter: RequestCounter,
     progress: ProgressBar,
 }
 
-pub struct Tester {
-    config: TestConfig,
+pub struct LoadTester {
+    config: LoadTestConfig,
 }
 
 #[derive(Serialize)]
@@ -62,8 +61,8 @@ pub struct BenchOutput {
     pub requests: Vec<RequestOutcome>,
 }
 
-impl Tester {
-    pub fn new(config: TestConfig) -> Self {
+impl LoadTester {
+    pub fn new(config: LoadTestConfig) -> Self {
         Self { config }
     }
 
@@ -88,7 +87,7 @@ impl Tester {
         Ok(filename)
     }
 
-    async fn worker(ctx: Arc<TestCtx>) -> Vec<Result<Duration, RequestError>> {
+    async fn worker(ctx: Arc<LoadTestCtx>) -> Vec<Result<Duration, RequestError>> {
         let mut results = Vec::new();
         loop {
             if ctx.counter.try_decrement().is_none() {
@@ -113,7 +112,7 @@ impl Tester {
     pub async fn run(&mut self) -> Result<BenchOutput, RequestError> {
         let filename = self.setup().await?;
 
-        let ctx = Arc::new(TestCtx {
+        let ctx = Arc::new(LoadTestCtx {
             host_addr: self.config.host_addr,
             request: Request::Get(GetRequest { filename }),
             counter: RequestCounter::new(self.config.num_requests),
@@ -123,7 +122,7 @@ impl Tester {
         let start = Instant::now();
         let mut set = JoinSet::new();
         for _ in 0..self.config.concurrency {
-            set.spawn(Tester::worker(ctx.clone()));
+            set.spawn(LoadTester::worker(ctx.clone()));
         }
         let worker_results = set.join_all().await;
         let total_elapsed = start.elapsed();

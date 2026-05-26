@@ -3,7 +3,7 @@ use std::net::SocketAddr;
 use clap::Parser;
 use serde::Deserialize;
 
-use benchmark::{TestConfig, Tester};
+use benchmark::{LoadTestConfig, LoadTester};
 
 mod benchmark;
 mod client;
@@ -44,7 +44,7 @@ async fn main() {
         std::process::exit(1);
     });
 
-    let mut tester = Tester::new(TestConfig {
+    let mut tester = LoadTester::new(LoadTestConfig {
         host_addr,
         num_requests: bench_config.num_requests,
         concurrency: bench_config.concurrency,
