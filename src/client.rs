@@ -207,29 +207,37 @@ impl Client {
 
     pub async fn get(&self, req: &GetRequest) -> Result<GetResponse, RequestError> {
         let mut conn = TcpStream::connect(self.socket).await?;
-        conn.write_all(&req.to_bytes()).await?;
-        let mut reader = BufReader::new(conn);
+        let (rx, mut tx) = conn.split();
+        tx.write_all(&req.to_bytes()).await?;
+        tx.shutdown().await?;
+        let mut reader = BufReader::new(rx);
         GetResponse::from_async_stream(&mut reader).await
     }
 
     pub async fn put(&self, req: &PutRequest) -> Result<OkResponse, RequestError> {
         let mut conn = TcpStream::connect(self.socket).await?;
-        conn.write_all(&req.to_bytes()).await?;
-        let mut reader = BufReader::new(conn);
+        let (rx, mut tx) = conn.split();
+        tx.write_all(&req.to_bytes()).await?;
+        tx.shutdown().await?;
+        let mut reader = BufReader::new(rx);
         OkResponse::from_async_stream(&mut reader).await
     }
 
     pub async fn delete(&self, req: &DeleteRequest) -> Result<OkResponse, RequestError> {
         let mut conn = TcpStream::connect(self.socket).await?;
-        conn.write_all(&req.to_bytes()).await?;
-        let mut reader = BufReader::new(conn);
+        let (rx, mut tx) = conn.split();
+        tx.write_all(&req.to_bytes()).await?;
+        tx.shutdown().await?;
+        let mut reader = BufReader::new(rx);
         OkResponse::from_async_stream(&mut reader).await
     }
 
     pub async fn list(&self) -> Result<ListResponse, RequestError> {
         let mut conn = TcpStream::connect(self.socket).await?;
-        conn.write_all(b"LIST\n").await?;
-        let mut reader = BufReader::new(conn);
+        let (rx, mut tx) = conn.split();
+        tx.write_all(b"LIST\n").await?;
+        tx.shutdown().await?;
+        let mut reader = BufReader::new(rx);
         ListResponse::from_async_stream(&mut reader).await
     }
 }
