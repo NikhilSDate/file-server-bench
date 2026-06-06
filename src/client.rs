@@ -31,6 +31,9 @@ pub struct DeleteRequest {
     pub filename: String,
 }
 
+#[derive(Debug)]
+pub struct ListRequest;
+
 pub enum Request {
     Get(GetRequest),
     Put(PutRequest),
@@ -93,6 +96,14 @@ impl ToBytes for DeleteRequest {
         bytes.extend(b"DELETE ");
         bytes.extend(self.filename.as_bytes());
         bytes.extend(b"\n");
+        bytes
+    }
+}
+
+impl ToBytes for ListRequest {
+    fn to_bytes(&self) -> Vec<u8> {
+        let mut bytes = Vec::new();
+        bytes.extend(b"LIST\n");
         bytes
     }
 }
@@ -205,39 +216,33 @@ impl Client {
         Self { socket }
     }
 
-    pub async fn get(&self, req: &GetRequest) -> Result<GetResponse, RequestError> {
+    async fn make_request<Req, Resp>(&self, req: &Req) -> Result<Resp, Resp::Error>
+        where Req: ToBytes,
+              Resp: FromAsyncStream,
+              Resp::Error: From<Error>
+    {
         let mut conn = TcpStream::connect(self.socket).await?;
         let (rx, mut tx) = conn.split();
         tx.write_all(&req.to_bytes()).await?;
         tx.shutdown().await?;
         let mut reader = BufReader::new(rx);
-        GetResponse::from_async_stream(&mut reader).await
+        Resp::from_async_stream(&mut reader).await
+    }
+
+    pub async fn get(&self, req: &GetRequest) -> Result<GetResponse, RequestError> {
+        self.make_request(req).await
     }
 
     pub async fn put(&self, req: &PutRequest) -> Result<OkResponse, RequestError> {
-        let mut conn = TcpStream::connect(self.socket).await?;
-        let (rx, mut tx) = conn.split();
-        tx.write_all(&req.to_bytes()).await?;
-        tx.shutdown().await?;
-        let mut reader = BufReader::new(rx);
-        OkResponse::from_async_stream(&mut reader).await
+        self.make_request(req).await
     }
 
     pub async fn delete(&self, req: &DeleteRequest) -> Result<OkResponse, RequestError> {
-        let mut conn = TcpStream::connect(self.socket).await?;
-        let (rx, mut tx) = conn.split();
-        tx.write_all(&req.to_bytes()).await?;
-        tx.shutdown().await?;
-        let mut reader = BufReader::new(rx);
-        OkResponse::from_async_stream(&mut reader).await
+        self.make_request(req).await
     }
 
     pub async fn list(&self) -> Result<ListResponse, RequestError> {
-        let mut conn = TcpStream::connect(self.socket).await?;
-        let (rx, mut tx) = conn.split();
-        tx.write_all(b"LIST\n").await?;
-        tx.shutdown().await?;
-        let mut reader = BufReader::new(rx);
-        ListResponse::from_async_stream(&mut reader).await
+        let req = ListRequest;
+        self.make_request(&req).await
     }
 }
